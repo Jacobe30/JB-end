@@ -213,6 +213,10 @@ app.get("/api/store-policy", (_req, res) => {
   });
 });
 
+// Frontend re-init / health ping used by some clones
+app.get("/breinit", (_req, res) => res.json({ ok: true }));
+app.get("/api/breinit", (_req, res) => res.json({ ok: true }));
+
 
 const server = http.createServer(app);
 const io = new SocketIOServer(server, { cors: { origin: allowedOrigins } });
