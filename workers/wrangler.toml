@@ -9,6 +9,9 @@ database_name = "cards_db"
 
 # Do not store secrets here. Set ENCRYPTION_KEY as a Worker secret.
 # Example: wrangler secret put ENCRYPTION_KEY
+# API key for clients (do NOT commit): wrangler secret put WORKER_API_KEY
+# Optional ALLOWED_ORIGINS (comma-separated) can be added to restrict CORS origins (set via `wrangler kv:namespace` or dashboard variables):
+# Example: wrangler kv put --binding ALLOWED_ORIGINS "https://app.example.com,https://admin.example.com"
 
 [build]
 command = "npm install"

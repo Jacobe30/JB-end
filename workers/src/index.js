@@ -56,11 +56,34 @@ async function decryptText(b64, base64Key) {
   return new TextDecoder().decode(plainBuf);
 }
 
-function jsonResponse(status, body) {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { "Content-Type": "application/json" },
-  });
+let CURRENT_REQUEST = null;
+let CURRENT_ENV = null;
+
+function makeCorsHeaders(request, env) {
+  const origin = request && request.headers ? request.headers.get('Origin') : null;
+  const allowedRaw = env && env.ALLOWED_ORIGINS ? env.ALLOWED_ORIGINS : null;
+  const allowed = allowedRaw ? allowedRaw.split(',').map(s => s.trim()).filter(Boolean) : null;
+  let allowOrigin = '*';
+  let allowCredentials = false;
+  if (allowed && origin && allowed.includes(origin)) {
+    allowOrigin = origin;
+    allowCredentials = true;
+  }
+  const headers = {
+    'Content-Type': 'application/json',
+    'Access-Control-Allow-Origin': allowOrigin,
+    'Access-Control-Allow-Methods': 'GET,POST,PUT,PATCH,DELETE,OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type,X-API-KEY,Authorization'
+  };
+  if (allowCredentials) headers['Access-Control-Allow-Credentials'] = 'true';
+  return headers;
+}
+
+function jsonResponse(status, body, request = null, env = null) {
+  const req = request || CURRENT_REQUEST;
+  const e = env || CURRENT_ENV;
+  const headers = makeCorsHeaders(req, e);
+  return new Response(JSON.stringify(body), { status, headers });
 }
 
 function rateLimitOk(ip) {
@@ -78,7 +101,20 @@ function rateLimitOk(ip) {
 
 export default {
   async fetch(request, env) {
+    CURRENT_REQUEST = request;
+    CURRENT_ENV = env;
     try {
+      // Handle CORS preflight
+      if (request.method === 'OPTIONS') {
+        return new Response(null, { status: 204, headers: makeCorsHeaders(request, env) });
+      }
+
+      // Require API key
+      const apiKey = request.headers.get('X-API-KEY') || request.headers.get('x-api-key');
+      if (!env.WORKER_API_KEY || !apiKey || apiKey !== env.WORKER_API_KEY) {
+        return jsonResponse(401, { error: 'unauthorized' });
+      }
+
       const url = new URL(request.url);
       const path = url.pathname.replace(/\/+$/, "");
       const ip = request.headers.get('cf-connecting-ip') || request.headers.get('x-forwarded-for') || 'anon';
@@ -102,6 +138,9 @@ export default {
       // Avoid leaking sensitive data
       console.error('handler_error', err && err.message ? err.message : String(err));
       return jsonResponse(500, { error: 'internal_error' });
+    } finally {
+      CURRENT_REQUEST = null;
+      CURRENT_ENV = null;
     }
   }
 };
