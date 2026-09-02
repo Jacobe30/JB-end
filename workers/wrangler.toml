@@ -1,0 +1,14 @@
+name = "cards-api-worker"
+main = "./src/index.js"
+compatibility_date = "2026-09-02"
+
+# D1 binding. Configure this database in Cloudflare dashboard and in your environment.
+[[d1_databases]]
+binding = "CARDS_DB"
+database_name = "cards_db"
+
+# Do not store secrets here. Set ENCRYPTION_KEY as a Worker secret.
+# Example: wrangler secret put ENCRYPTION_KEY
+
+[build]
+command = "npm install"

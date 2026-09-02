@@ -1,0 +1,12 @@
+{
+  "name": "cards-api-worker",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "start": "miniflare --watch --wrangler-config wrangler.toml",
+    "test": "node ./test/test.js"
+  },
+  "devDependencies": {
+    "miniflare": "^3.0.0"
+  }
+}
